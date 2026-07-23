@@ -33,7 +33,12 @@ REGIONS = [
     ("norway", "Norway"), ("netherlands", "Netherlands"), ("france", "France"),
     ("spain", "Spain"), ("portugal", "Portugal"), ("italy", "Italy"),
     ("israel", "Israel"), ("japan", "Japan"), ("canada", "Canada"),
-    ("australia", "Australia"), ("singapore", "Singapore"), ("hong kong", "Hong Kong"),
+    ("poland", "Poland"), ("belgium", "Belgium"), ("finland", "Finland"),
+    ("czech", "Czechia"), ("hungary", "Hungary"), ("slovakia", "Slovakia"),
+    ("flanders", "Belgium"),
+    ("australia", "Australia"), ("new zealand", "New Zealand"), ("singapore", "Singapore"),
+    ("hong kong", "Hong Kong"), ("korea", "South Korea"), ("china", "China"),
+    ("taiwan", "Taiwan"), ("india", "India"),
     ("usa", "USA"), ("united states", "USA"),
     ("us ", "USA"), ("embc", "EU"), ("european", "EU"), ("eu ", "EU"),
     ("eu+", "EU"), ("international", "International"), ("worldwide", "International"),
@@ -91,11 +96,15 @@ def normalize_category(text):
 BRIDGE_KEYS = ["spin-off", "spinoff", "transition", "proof of concept", "academic",
                "r&d", "research", "bridge", "dissertation"]
 
-def classify_audience(category, title, description, career):
-    """Label each grant: For research | For startups | For startups doing research."""
+def classify_audience(category, title, description, career, startup_stage=""):
+    """Label each grant: For research | For startups | For startups doing research.
+
+    A filled-in Startup Stage column is the definitive signal that an entry is
+    startup funding, regardless of how its free-text category is worded.
+    """
     cat = normalize_category(category)
     blob = " ".join([category or "", title or "", description or "", career or ""]).lower()
-    if "Startups & Innovation" in cat:
+    if startup_stage.strip() or "Startups & Innovation" in cat:
         if any(k in blob for k in BRIDGE_KEYS):
             return "For startups doing research"
         return "For startups"
@@ -268,9 +277,14 @@ def main():
                 get(rec, "Approx. Success Rate"), get(rec, "Link"), get(rec, "Notes"),
                 normalize_region(get(rec, "Country / Region")),
                 normalize_career(get(rec, "Career Stage")),
-                normalize_category(get(rec, "Category")),
+                (normalize_category(get(rec, "Category"))
+                 + (";Startups & Innovation"
+                    if get(rec, "Startup Stage").strip()
+                    and "Startups & Innovation" not in normalize_category(get(rec, "Category"))
+                    else "")),
                 classify_audience(get(rec, "Category"), get(rec, "Title"),
-                                  get(rec, "Description"), get(rec, "Career Stage")),
+                                  get(rec, "Description"), get(rec, "Career Stage"),
+                                  get(rec, "Startup Stage")),
                 get(rec, "Startup Stage"), get(rec, "Company Status"),
                 get(rec, "Funding Type"),
             ),
