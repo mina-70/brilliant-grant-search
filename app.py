@@ -175,9 +175,14 @@ def meta():
     return out
 
 
-app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
+# Serve the exact same site GitHub Pages serves (built by build_static.py).
+# Mounted LAST so the /api/* routes above take precedence.
+DOCS = BASE / "docs"
+if DOCS.exists():
+    app.mount("/", StaticFiles(directory=DOCS, html=True), name="site")
+else:  # fallback for a bare checkout
+    app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 
-
-@app.get("/")
-def index():
-    return FileResponse(BASE / "static" / "index.html")
+    @app.get("/")
+    def index():
+        return FileResponse(BASE / "static" / "index.html")
