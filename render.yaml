@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: grant-search
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python import_grants.py && (python crawler.py || true) && (python ingest_grantsgov.py || true) && (python ingest_eu_portal.py || true)
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT

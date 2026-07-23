@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grant Search — A Brilliant Mind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #405064; --ink-soft: #71809a; --paper: #ffffff; --ivory: #fbf0e6;
+    --line: #fbd99a; --hairline: rgba(64,80,100,.18);
+    --teal: #a8dedc; --pink: #f499a4;
+    --teal-ink: #2c6e6b; --gold-ink: #8a6414; --pink-ink: #a94250;
+    --serif: "Fraunces", Georgia, serif; --sans: "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  .topbar { border-bottom: 1px solid var(--hairline); }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; }
+  .topbar img { height: 46px; width: auto; mix-blend-mode: multiply; }
+  .topbar .note { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); }
+
+  .hero { padding: 74px 0 56px; text-align: center; }
+  .hero h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(34px, 5.2vw, 58px); letter-spacing: .12em; text-transform: uppercase; line-height: 1.18; }
+  .hero p { font-size: 17px; color: var(--ink-soft); margin: 22px auto 0; max-width: 62ch; }
+
+  .photo { width: 100%; height: clamp(260px, 44vh, 460px); overflow: hidden; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .stats { background: var(--ivory); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
+  .stats .wrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 44px 24px; text-align: center; }
+  .stat .n { font-family: var(--serif); font-weight: 500; font-size: clamp(40px, 5vw, 64px); line-height: 1; }
+  .stat .l { margin-top: 10px; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft); }
+
+  /* Mode switch: Scientific | Startup */
+  .modes { display: flex; justify-content: center; gap: 0; padding: 44px 0 0; }
+  .modes button { border: 1px solid var(--hairline); background: none; padding: 13px 30px; font-family: var(--serif); font-size: 17px; letter-spacing: .06em; cursor: pointer; color: var(--ink-soft); }
+  .modes button:first-child { border-radius: 999px 0 0 999px; }
+  .modes button:last-child { border-radius: 0 999px 999px 0; border-left: none; }
+  .modes button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .controls { padding: 28px 0 8px; display: grid; gap: 14px; }
+  input[type=search] { border: none; border-bottom: 1px solid var(--hairline); padding: 12px 2px; font: inherit; font-size: 18px; font-family: var(--serif); color: var(--ink); background: transparent; width: 100%; }
+  input[type=search]::placeholder { color: var(--ink-soft); opacity: .7; }
+  input[type=search]:focus { outline: none; border-bottom: 2px solid var(--ink); }
+  .filterrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  select { border: none; border-bottom: 1px solid var(--hairline); padding: 6px 2px; font: inherit; font-size: 13px; background: transparent; color: var(--ink); max-width: 220px; cursor: pointer; }
+  select:focus { outline: none; border-bottom-color: var(--ink); }
+  .count { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; padding-top: 4px; }
+  .legend button { border: none; background: none; padding: 4px 0; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; cursor: pointer; color: var(--ink-soft); border-bottom: 2px solid transparent; }
+  .legend button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+  #results { margin-top: 26px; }
+  .grant { position: relative; border-top: 1px solid var(--hairline); padding: 34px 0 30px; display: grid; grid-template-columns: 1fr auto; gap: 6px 28px; }
+  .grant:last-child { border-bottom: 1px solid var(--hairline); }
+  .grant h2 { font-family: var(--serif); font-weight: 500; font-size: 25px; line-height: 1.25; max-width: 24ch; }
+  .grant h2 a { color: var(--ink); text-decoration: none; }
+  .grant h2 a:hover { border-bottom: 2px solid var(--line); }
+  .funder { font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); margin-top: 10px; }
+  .aud { display: inline-block; margin-top: 10px; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; padding: 4px 11px; border-radius: 999px; border: 1px solid; }
+  .aud-research { color: var(--teal-ink); border-color: var(--teal); background: rgba(168,222,220,.15); }
+  .aud-startups { color: var(--pink-ink); border-color: var(--pink); background: rgba(244,153,164,.12); }
+  .aud-bridge { color: var(--gold-ink); border-color: var(--line); background: rgba(251,217,154,.18); }
+  .desc { grid-column: 1; margin-top: 14px; max-width: 66ch; }
+  .facts { grid-column: 1; display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .facts b { color: var(--ink); font-weight: 500; }
+  .sfacts { grid-column: 1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .sfacts span { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 11px; border: 1px solid var(--hairline); border-radius: 6px; color: var(--ink-soft); }
+  .sfacts b { color: var(--ink); font-weight: 600; }
+
+  .side { grid-row: 1 / span 4; grid-column: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
+  .badges { display: flex; gap: 10px; }
+  .badge { width: 78px; height: 78px; border-radius: 50%; border: 1px solid var(--ink); background: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .badge .v { font-family: var(--serif); font-weight: 500; font-size: 15px; line-height: 1.1; max-width: 68px; overflow: hidden; font-variant-numeric: tabular-nums; }
+  .badge .l { font-size: 8px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); margin-top: 3px; }
+  .b-dur { border-color: var(--hairline); }
+  .stamp { text-align: right; }
+  .stamp .chip { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
+  .stamp .chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .s-open .chip { color: var(--teal-ink); } .s-open .chip::before { background: var(--teal); }
+  .s-closing_soon .chip { color: var(--gold-ink); } .s-closing_soon .chip::before { background: var(--line); }
+  .s-passed .chip { color: var(--pink-ink); } .s-passed .chip::before { background: var(--pink); }
+  .s-check_site .chip { color: var(--ink-soft); } .s-check_site .chip::before { background: var(--hairline); }
+  .stamp .when { display: block; font-size: 13px; color: var(--ink-soft); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  details.more { grid-column: 1; margin-top: 12px; }
+  details.more summary { cursor: pointer; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); font-weight: 600; }
+  details.more div { margin-top: 12px; font-size: 14.5px; color: var(--ink-soft); display: grid; gap: 5px; max-width: 70ch; }
+  details.more b { color: var(--ink); font-weight: 500; }
+
+  .empty { text-align: center; padding: 80px 0; color: var(--ink-soft); font-family: var(--serif); font-size: 20px; }
+  .empty .hint { font-family: var(--sans); font-size: 14px; margin-top: 8px; }
+  .loading { text-align: center; padding: 60px 0; color: var(--ink-soft); }
+
+  footer { border-top: 1px solid var(--hairline); }
+  footer .wrap { padding: 26px 24px 40px; font-size: 13px; color: var(--ink-soft); }
+
+  @media (max-width: 700px) {
+    .hero { padding: 52px 0 40px; }
+    .stats .wrap { grid-template-columns: 1fr; gap: 30px; }
+    .grant { grid-template-columns: 1fr; }
+    .side { grid-row: auto; grid-column: 1; flex-direction: row; align-items: center; justify-content: space-between; order: 5; margin-top: 16px; }
+    .stamp { text-align: left; }
+    .modes button { padding: 11px 18px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wrap">
+      <img src="logo.png" alt="A Brilliant Mind — writing and productivity boost for scientists">
+      <span class="note">Grant Search</span>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="wrap">
+      <h1 id="heroTitle">Funding for<br>brilliant minds</h1>
+      <p id="heroText">Fellowships and grants for PhD students and postdocs — deadlines, amounts and eligibility, checked against the official sources.</p>
+    </div>
+  </div>
+
+  <div class="photo"><img id="heroImg" src="img-library.jpg" alt="" loading="lazy"></div>
+
+  <div class="stats">
+    <div class="wrap">
+      <div class="stat"><div class="n" id="statTotal">–</div><div class="l" id="statTotalLabel">Grants tracked</div></div>
+      <div class="stat"><div class="n" id="statOpen">–</div><div class="l">Open now</div></div>
+      <div class="stat"><div class="n" id="statClosing">–</div><div class="l">Closing soon</div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="modes" id="modes" role="group" aria-label="Choose funding type">
+      <button data-mode="research" aria-pressed="true">Scientific grants</button>
+      <button data-mode="startup" aria-pressed="false">Startup grants</button>
+    </div>
+
+    <div class="controls">
+      <input type="search" id="q" placeholder="Search…">
+      <div class="filterrow" id="filterrow">
+        <select id="region" aria-label="Filter by country"><option value="">All countries</option></select>
+        <!-- research-only -->
+        <select id="career" class="f-research" aria-label="Filter by career stage"><option value="">All career stages</option></select>
+        <select id="category" class="f-research" aria-label="Filter by field"><option value="">All fields</option></select>
+        <!-- startup-only -->
+        <select id="stage" class="f-startup" aria-label="Filter by startup stage"><option value="">All stages</option></select>
+        <select id="cstatus" class="f-startup" aria-label="Filter by company status"><option value="">Founded or not</option></select>
+        <select id="ftype" class="f-startup" aria-label="Filter by funding type"><option value="">All funding types</option></select>
+        <select id="sort" aria-label="Sort results">
+          <option value="deadline">Sort: next deadline</option>
+          <option value="amount">Sort: highest funding</option>
+          <option value="title">Sort: title A–Z</option>
+          <option value="funder">Sort: funder A–Z</option>
+        </select>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="legend" id="legend" role="group" aria-label="Filter by status">
+        <button data-status="" aria-pressed="true">All</button>
+        <button data-status="closing_soon" aria-pressed="false">Closing soon</button>
+        <button data-status="open" aria-pressed="false">Open</button>
+        <button data-status="check_site" aria-pressed="false">Check site</button>
+        <button data-status="passed" aria-pressed="false">Closed</button>
+      </div>
+    </div>
+
+    <div id="results" aria-live="polite"><div class="loading">Loading grants…</div></div>
+  </div>
+
+  <div class="photo" style="margin-top:90px"><img src="img-lab.jpg" alt="" loading="lazy"></div>
+
+  <footer>
+    <div class="wrap">Deadlines are parsed from official sources but change often — always confirm on the funder's page before applying. <span id="builtNote"></span></div>
+  </footer>
+
+<script>
+const $ = id => document.getElementById(id);
+let ALL = [], mode = "research", statusFilter = "";
+
+const STATUS_LABEL = { open:"Open", closing_soon:"Closing soon", passed:"Closed", check_site:"Check site" };
+const CLOSING_SOON_DAYS = 45;
+
+function esc(s){ return (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtDate(iso){ return iso ? new Date(iso+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : ""; }
+
+function computeStatus(g, today){
+  if (g.deadline_type === "rolling") return "open";
+  if (g.deadline_type === "check_site" || !g.deadline_date) return "check_site";
+  const d = new Date(g.deadline_date+"T00:00:00");
+  const diff = Math.round((d - today) / 86400000);
+  if (diff < 0) return "passed";
+  if (diff <= CLOSING_SOON_DAYS) return "closing_soon";
+  return "open";
+}
+
+function amountValue(s){
+  if (!s) return 0;
+  const t = s.replace(/,/g,"");
+  const m = t.match(/(€|\$|£|¥|CHF|SEK|DKK|NOK|AUD|CAD|HK\$|S\$)\s?([\d.]+)\s*(k|K|M|m(?:illion)?|thousand)?(?:\s*[–-]\s*([\d.]+)\s*(k|K|M|m(?:illion)?|thousand)?)?/);
+  if (!m) return 0;
+  const hasRange = m[4] !== undefined;
+  let n = parseFloat(hasRange ? m[4] : m[2]);
+  const sfx = ((hasRange ? (m[5]||m[3]) : m[3])||"").toLowerCase();
+  if (sfx === "m" || sfx === "million") n *= 1e6;
+  else if (sfx === "k" || sfx === "thousand") n *= 1e3;
+  if (/\/\s*(mo|month)|monthly|per month/i.test(s)) n *= 12;
+  return n;
+}
+
+function compactAmount(s){
+  if (!s) return "varies";
+  const t = s.replace(/,/g,"");
+  const m = t.match(/(€|\$|£|¥|CHF|SEK|DKK|NOK|AUD|CAD)\s?([\d.]+)\s*(k|K|M|m(?:illion)?|thousand)?(?:\s*[–-]\s*([\d.]+)\s*(k|K|M|m(?:illion)?|thousand)?)?/);
+  if (!m) return "varies";
+  const hasRange = m[4] !== undefined;
+  let num = parseFloat(hasRange ? m[4] : m[2]);
+  let sfx = ((hasRange ? (m[5]||m[3]) : m[3])||"").toLowerCase();
+  if (sfx === "million" || sfx === "m") sfx = "M";
+  else if (sfx === "thousand" || sfx === "k") sfx = "k";
+  else if (num >= 1e6){ num /= 1e6; sfx = "M"; }
+  else if (num >= 1e3){ num /= 1e3; sfx = "k"; }
+  const val = (Math.round(num*10)/10).toString().replace(/\.0$/,"");
+  const per = /\/\s*(yr|year|month|mo)|monthly|per year|per month/i.test(s)
+    ? ((/mo/i.test(s)||/month/i.test(s)) ? "/mo" : "/yr") : "";
+  const sym = m[1].length > 1 ? m[1]+" " : m[1];
+  return sym+val+sfx+per;
+}
+
+function compactDuration(s){
+  if (!s) return "varies";
+  const m = s.replace(/–/g,"-").match(/(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\s*(year|yr|month|mo|week|day)/i);
+  if (!m) return "varies";
+  const range = m[1].replace(/\s*/g,"").replace("-","–");
+  const unit = {year:"yrs",yr:"yrs",month:"mo",mo:"mo",week:"wks",day:"days"}[m[2].toLowerCase()];
+  return range+" "+unit;
+}
+
+function audClass(a){
+  if (a === "For startups") return "aud-startups";
+  if (a === "For startups doing research") return "aud-bridge";
+  return "aud-research";
+}
+
+function card(g){
+  const startupBits = mode === "startup" ? `
+    <div class="sfacts">
+      ${g.startup_stage ? g.startup_stage.split(";").map(s=>`<span><b>${esc(s)}</b> stage</span>`).join("") : ""}
+      ${g.company_status ? `<span>${esc(g.company_status)}</span>` : ""}
+      ${g.funding_type ? `<span>${esc(g.funding_type)}</span>` : ""}
+    </div>` : "";
+  let when = "";
+  if (g.deadline_type === "rolling") when = "rolling submission";
+  else if (g.deadline_date && g.status !== "passed"){
+    when = (g.deadline_type === "approx" ? "~" : "") + fmtDate(g.deadline_date);
+    if (g.days_left >= 0 && g.deadline_type === "fixed") when += ` · ${g.days_left} days left`;
+  } else if (g.status === "passed" && g.deadline_date) when = "was "+fmtDate(g.deadline_date);
+
+  return `<article class="grant">
+    <div>
+      <h2><a href="${esc(g.link)}" target="_blank" rel="noopener">${esc(g.title)}</a></h2>
+      <div class="funder">${esc(g.funding_body)} · ${esc(g.region_clean || g.region)}</div>
+      <span class="aud ${audClass(g.audience)}">${esc(g.audience||"For research")}</span>
+    </div>
+    <div class="side">
+      <div class="badges">
+        <div class="badge" title="${esc(g.amount)}"><span class="v">${esc(compactAmount(g.amount))}</span><span class="l">Funding</span></div>
+        <div class="badge b-dur" title="${esc(g.duration)}"><span class="v">${esc(compactDuration(g.duration))}</span><span class="l">Duration</span></div>
+      </div>
+      <div class="stamp s-${g.status}">
+        <span class="chip">${STATUS_LABEL[g.status]||g.status}</span>
+        ${when ? `<span class="when">${when}</span>` : ""}
+      </div>
+    </div>
+    <p class="desc">${esc(g.description)}</p>
+    ${startupBits}
+    <div class="facts">
+      <span><b>${esc(g.amount)}</b></span>
+      <span>${esc(g.duration)}</span>
+      ${mode === "research" ? `<span>${esc(g.career_stage)}</span>` : ""}
+      ${g.success_rate ? `<span>success ${esc(g.success_rate)}</span>` : ""}
+    </div>
+    <details class="more">
+      <summary>Eligibility &amp; how to apply</summary>
+      <div>
+        <span><b>Eligibility:</b> ${esc(g.eligibility)}</span>
+        <span><b>Deadline (as published):</b> ${esc(g.deadline_text)}</span>
+        <span><b>Apply via:</b> ${esc(g.application_mode)}</span>
+        ${g.interview ? `<span><b>Interview:</b> ${esc(g.interview)}</span>` : ""}
+        ${g.notes ? `<span><b>Notes:</b> ${esc(g.notes)}</span>` : ""}
+      </div>
+    </details>
+  </article>`;
+}
+
+function pool(){
+  return mode === "startup"
+    ? ALL.filter(g => (g.audience||"").startsWith("For startups"))
+    : ALL.filter(g => g.audience === "For research");
+}
+
+function render(){
+  const q = $("q").value.trim().toLowerCase();
+  let list = pool();
+
+  if (q) list = list.filter(g => [g.title,g.funding_body,g.description,g.eligibility,
+      g.category,g.notes,g.region,g.career_stage,g.funding_type].join(" ").toLowerCase().includes(q));
+  const val = id => $(id).value;
+  if (val("region"))  list = list.filter(g => (g.region_clean||g.region) === val("region"));
+  if (mode === "research"){
+    if (val("career"))   list = list.filter(g => (g.career_clean||"").includes(val("career")));
+    if (val("category")) list = list.filter(g => (g.category_clean||"").includes(val("category")));
+  } else {
+    if (val("stage"))   list = list.filter(g => (g.startup_stage||"").includes(val("stage")));
+    if (val("cstatus")) list = list.filter(g => (g.company_status||"") === val("cstatus"));
+    if (val("ftype"))   list = list.filter(g => (g.funding_type||"") === val("ftype"));
+  }
+  if (statusFilter) list = list.filter(g => g.status === statusFilter);
+
+  const sort = val("sort");
+  if (sort === "title") list.sort((a,b)=>a.title.localeCompare(b.title));
+  else if (sort === "funder") list.sort((a,b)=>(a.funding_body||"").localeCompare(b.funding_body||""));
+  else if (sort === "amount") list.sort((a,b)=>amountValue(b.amount)-amountValue(a.amount));
+  else {
+    const ord = {closing_soon:0, open:0, check_site:2, passed:3};
+    list.sort((a,b)=>(ord[a.status]??2)-(ord[b.status]??2)
+      || (a.deadline_date||"9998-12-31").localeCompare(b.deadline_date||"9998-12-31")
+      || (a.deadline_type==="rolling") - (b.deadline_type==="rolling"));
+  }
+
+  $("count").textContent = `${list.length} grant${list.length===1?"":"s"}`;
+  $("results").innerHTML = list.length
+    ? list.map(card).join("")
+    : `<div class="empty">No grants match.<div class="hint">Try fewer filters or a broader search term.</div></div>`;
+
+  const p = pool();
+  $("statTotal").textContent = p.length;
+  $("statOpen").textContent = p.filter(g=>g.status==="open"||g.status==="closing_soon").length;
+  $("statClosing").textContent = p.filter(g=>g.status==="closing_soon").length;
+}
+
+function fillSelect(id, values, keepLabel){
+  const sel = $(id), first = sel.options[0].textContent;
+  sel.innerHTML = "";
+  const o0 = document.createElement("option"); o0.value=""; o0.textContent = keepLabel||first; sel.appendChild(o0);
+  for (const v of values){ const o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); }
+}
+
+function rebuildFilters(){
+  const p = pool();
+  const uniq = (fn) => [...new Set(p.flatMap(fn).filter(Boolean))].sort();
+  fillSelect("region", uniq(g=>[g.region_clean||g.region]), "All countries");
+  if (mode === "research"){
+    const CAREER = ["Master","PhD","Early Postdoc","Senior Postdoc","Any / Established"];
+    const CATS = ["All disciplines","Life Sciences & Medicine","Natural Sciences & Engineering","Social Sciences & Humanities","Mobility & Career","Startups & Innovation"];
+    const present = new Set(p.flatMap(g=>(g.career_clean||"").split(";")));
+    const catsP = new Set(p.flatMap(g=>(g.category_clean||"").split(";")));
+    fillSelect("career", CAREER.filter(c=>present.has(c)), "All career stages");
+    fillSelect("category", CATS.filter(c=>catsP.has(c)), "All fields");
+  } else {
+    const STAGES = ["Pre-seed","Seed","Growth"];
+    const present = new Set(p.flatMap(g=>(g.startup_stage||"").split(";")));
+    fillSelect("stage", STAGES.filter(s=>present.has(s)), "All stages");
+    fillSelect("cstatus", uniq(g=>[g.company_status]), "Founded or not");
+    fillSelect("ftype", uniq(g=>[g.funding_type]), "All funding types");
+  }
+  for (const el of document.querySelectorAll(".f-research")) el.style.display = mode==="research" ? "" : "none";
+  for (const el of document.querySelectorAll(".f-startup")) el.style.display = mode==="startup" ? "" : "none";
+}
+
+function applyMode(){
+  const research = mode === "research";
+  $("heroTitle").innerHTML = research ? "Funding for<br>brilliant minds" : "Funding for<br>science ventures";
+  $("heroText").textContent = research
+    ? "Fellowships and grants for PhD students and postdocs — deadlines, amounts and eligibility, checked against the official sources."
+    : "Grants, incubators and seed funding for founders — filter by country, stage and whether your company exists yet.";
+  $("q").placeholder = research
+    ? "Search grants — postdoc, ERC, life sciences, Austria…"
+    : "Search startup funding — deep tech, pre-seed, aws, EIC…";
+  $("statTotalLabel").textContent = research ? "Grants tracked" : "Programmes tracked";
+  $("heroImg").src = research ? "img-library.jpg" : "img-lab.jpg";
+  rebuildFilters();
+  render();
+}
+
+async function init(){
+  try {
+    const res = await fetch("grants.json");
+    const data = await res.json();
+    const today = new Date(new Date().toDateString());
+    ALL = data.grants.map(g => {
+      g.status = computeStatus(g, today);
+      g.days_left = g.deadline_date
+        ? Math.round((new Date(g.deadline_date+"T00:00:00") - today)/86400000) : null;
+      return g;
+    });
+    $("builtNote").textContent = `Data last checked ${data.built}.`;
+    applyMode();
+  } catch(e){
+    $("results").innerHTML = `<div class="empty">Could not load grant data.<div class="hint">${esc(String(e))}</div></div>`;
+  }
+}
+
+let t;
+$("q").addEventListener("input", ()=>{ clearTimeout(t); t=setTimeout(render,150); });
+for (const id of ["region","career","category","stage","cstatus","ftype","sort"])
+  $(id).addEventListener("change", render);
+$("modes").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  mode = b.dataset.mode;
+  for (const x of $("modes").querySelectorAll("button")) x.setAttribute("aria-pressed", x===b ? "true":"false");
+  $("q").value = ""; statusFilter = "";
+  for (const x of $("legend").querySelectorAll("button")) x.setAttribute("aria-pressed", x.dataset.status===""?"true":"false");
+  applyMode();
+});
+$("legend").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  statusFilter = b.dataset.status;
+  for (const x of $("legend").querySelectorAll("button")) x.setAttribute("aria-pressed", x===b ? "true":"false");
+  render();
+});
+
+init();
+</script>
+</body>
+</html>
