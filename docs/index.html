@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- BUILD-v19-3TABS --><title>Grant Search — A Brilliant Mind</title>
+<!-- BUILD-v20-AWARDCARD --><title>Grant Search — A Brilliant Mind</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -181,7 +181,7 @@
   <div class="photo" style="margin-top:90px"><img src="img-lab.jpg" alt="" loading="lazy"></div>
 
   <footer>
-    <div class="wrap">Deadlines are parsed from official sources but change often — always confirm on the funder's page before applying. <span id="builtNote"></span> <span style="opacity:.5">build v19</span></div>
+    <div class="wrap">Deadlines are parsed from official sources but change often — always confirm on the funder's page before applying. <span id="builtNote"></span> <span style="opacity:.5">build v20 (awards fixed)</span></div>
   </footer>
 
 <script>
@@ -250,6 +250,44 @@ function audClass(a){
   if (a === "For startups") return "aud-startups";
   if (a === "For startups doing research") return "aud-bridge";
   return "aud-research";
+}
+
+function awardCard(g){
+  const nomination = /nomination only|cannot self/i.test(g.application_mode || "");
+  let when = "";
+  if (g.deadline_type === "rolling") when = "rolling / ongoing";
+  else if (g.deadline_date && g.status !== "passed"){
+    when = (g.deadline_type === "approx" ? "~" : "") + fmtDate(g.deadline_date);
+  }
+  return `<article class="grant award">
+    <div>
+      <h2><a href="${esc(g.link)}" target="_blank" rel="noopener">${esc(g.title)}</a></h2>
+      <div class="funder">${esc(g.funding_body)} · ${esc(g.region_clean || g.region)}</div>
+      <span class="aud aud-award">Award / Prize</span>
+      ${nomination ? `<span class="aud aud-nom">Nomination only</span>` : ""}
+    </div>
+    <div class="side">
+      <div class="prizebox">
+        <span class="prizeamt">${esc(g.amount || "Recognition")}</span>
+        <span class="prizefreq">${esc(g.duration || "")}</span>
+      </div>
+      ${when ? `<div class="stamp s-${g.status}"><span class="when">${esc(when)}</span></div>` : ""}
+    </div>
+    <p class="desc">${esc(g.description)}</p>
+    <div class="facts">
+      <span>${esc(g.category)}</span>
+      <span>${esc(g.career_stage)}</span>
+    </div>
+    <details class="more">
+      <summary>Eligibility &amp; how to enter</summary>
+      <div>
+        <span><b>Eligibility:</b> ${esc(g.eligibility)}</span>
+        <span><b>How to enter:</b> ${esc(g.application_mode)}</span>
+        <span><b>Timing:</b> ${esc(g.deadline_text)}</span>
+        ${g.notes ? `<span><b>Notes:</b> ${esc(g.notes)}</span>` : ""}
+      </div>
+    </details>
+  </article>`;
 }
 
 function card(g){
