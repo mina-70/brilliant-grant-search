@@ -96,6 +96,86 @@ def normalize_category(text):
 BRIDGE_KEYS = ["spin-off", "spinoff", "transition", "proof of concept", "academic",
                "r&d", "research", "bridge", "dissertation"]
 
+FUNDING_TYPE_RULES = [
+    ("Equity / investment", ["equity", "investment", "co-investment", "venture"]),
+    ("Loan", ["loan", "repayable advance", "credit"]),
+    ("Tax relief / credit", ["tax", "offset"]),
+    ("Investor incentive", ["investor subsidy", "investor tax", "loan guarantee"]),
+    ("Prize / award", ["prize", "endorsement"]),
+    ("Support / services only", ["free advisory", "free services", "free training", "services only"]),
+    ("Grant + support", ["+ incubation", "+ acceleration", "+ coaching", "+ training",
+                          "+ services", "+ consulting", "+ investor", "+ programmes",
+                          "fellowship", "materials", "stipend", "living allowance", "salary"]),
+    ("Grant", ["grant", "voucher", "cascade", "non-dilutive", "non-repayable", "matched"]),
+]
+
+def normalize_funding_type(text):
+    """Collapse the free-text Funding Type into a small clean set."""
+    t = (text or "").lower().strip()
+    if not t:
+        return ""
+    for label, keys in FUNDING_TYPE_RULES:
+        if any(k in t for k in keys):
+            return label
+    return "Grant"
+
+
+def normalize_founded(company_status, startup_stage):
+    """Return a SEMICOLON list from the four buckets:
+       Not yet founded | Founded < 3 years | Founded < 5 years | Founded 5+ years
+    Schemes open to a range list every applicable bucket."""
+    import re
+    s = (company_status or "").lower()
+    st = (startup_stage or "").lower()
+    if not s and not st:
+        return ""
+
+    order = ["Not yet founded", "Founded < 3 years", "Founded < 5 years", "Founded 5+ years"]
+    picked = set()
+
+    if "not yet" in s or "forming" in s:
+        picked.add("Not yet founded")
+
+    # explicit age ceiling like "<3", "<5", "<6", "<7", "<1", "6 months", "6 months - 3"
+    ceil = None
+    if "6 months" in s or re.search(r"<\s*1\b", s):
+        ceil = 1
+    else:
+        m = re.search(r"<\s*(\d+)", s)
+        if m:
+            ceil = int(m.group(1))
+        elif re.search(r"\b3 years\b", s):
+            ceil = 3
+    if ceil is not None:
+        if ceil <= 3: picked.update(["Founded < 3 years"])
+        elif ceil <= 5: picked.update(["Founded < 3 years", "Founded < 5 years"])
+        else: picked.update(["Founded < 3 years", "Founded < 5 years", "Founded 5+ years"])
+
+    # scale-up = mature
+    if "scale-up" in s or "scale up" in s:
+        picked.add("Founded 5+ years")
+
+    # generic "founded" with no explicit age -> infer from the startup stage
+    if "founded" in s and "not yet" not in s and ceil is None and "scale" not in s:
+        stages = set()
+        if "pre-seed" in st: stages.add("pre")
+        if re.search(r"\bseed\b", st): stages.add("seed")
+        if "growth" in st: stages.add("growth")
+        if "pre" in stages: picked.update(["Founded < 3 years"])
+        if "seed" in stages: picked.update(["Founded < 3 years", "Founded < 5 years"])
+        if "growth" in stages: picked.update(["Founded < 5 years", "Founded 5+ years"])
+        if not stages:  # founded, truly no hint -> all founded ages
+            picked.update(["Founded < 3 years", "Founded < 5 years", "Founded 5+ years"])
+
+    # if ONLY stage info exists (no company_status text at all)
+    if not s.strip() and st:
+        if "pre-seed" in st: picked.update(["Not yet founded", "Founded < 3 years"])
+        if re.search(r"\bseed\b", st): picked.update(["Founded < 3 years", "Founded < 5 years"])
+        if "growth" in st: picked.update(["Founded < 5 years", "Founded 5+ years"])
+
+    return ";".join([b for b in order if b in picked])
+
+
 def classify_audience(category, title, description, career, startup_stage=""):
     """Label each grant: For research | For startups | For startups doing research.
 
@@ -258,6 +338,8 @@ def main():
             company_status TEXT DEFAULT '',
             funding_type   TEXT DEFAULT '',
             entry_type     TEXT DEFAULT 'grant',
+            funding_type_clean TEXT DEFAULT '',
+            founded_bucket TEXT DEFAULT '',
             origin        TEXT DEFAULT 'curated',  -- curated | grants_gov | eu_portal
             last_checked  TEXT DEFAULT (date('now'))
         )
@@ -267,7 +349,7 @@ def main():
         deadline_text = get(rec, "Next Deadline (2026/27)")
         dtype, ddate = parse_deadline(deadline_text)
         cur.execute(
-            "INSERT INTO grants VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'curated',date('now'))",
+            "INSERT INTO grants VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'curated',date('now'))",
             (
                 get(rec, "ID"), get(rec, "Title"), get(rec, "Funding Body"),
                 get(rec, "Source"), get(rec, "Country / Region"), get(rec, "Category"),
@@ -289,6 +371,8 @@ def main():
                 get(rec, "Startup Stage"), get(rec, "Company Status"),
                 get(rec, "Funding Type"),
                 get(rec, "Entry Type") or "grant",
+                normalize_funding_type(get(rec, "Funding Type")),
+                normalize_founded(get(rec, "Company Status"), get(rec, "Startup Stage")),
             ),
         )
 
