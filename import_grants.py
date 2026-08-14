@@ -365,9 +365,10 @@ def main():
                     if get(rec, "Startup Stage").strip()
                     and "Startups & Innovation" not in normalize_category(get(rec, "Category"))
                     else "")),
-                classify_audience(get(rec, "Category"), get(rec, "Title"),
+                ("Award" if (get(rec, "Entry Type") == "award")
+                 else classify_audience(get(rec, "Category"), get(rec, "Title"),
                                   get(rec, "Description"), get(rec, "Career Stage"),
-                                  get(rec, "Startup Stage")),
+                                  get(rec, "Startup Stage"))),
                 get(rec, "Startup Stage"), get(rec, "Company Status"),
                 get(rec, "Funding Type"),
                 get(rec, "Entry Type") or "grant",
