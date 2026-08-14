@@ -257,6 +257,7 @@ def main():
             startup_stage  TEXT DEFAULT '',
             company_status TEXT DEFAULT '',
             funding_type   TEXT DEFAULT '',
+            entry_type     TEXT DEFAULT 'grant',
             origin        TEXT DEFAULT 'curated',  -- curated | grants_gov | eu_portal
             last_checked  TEXT DEFAULT (date('now'))
         )
@@ -266,7 +267,7 @@ def main():
         deadline_text = get(rec, "Next Deadline (2026/27)")
         dtype, ddate = parse_deadline(deadline_text)
         cur.execute(
-            "INSERT INTO grants VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'curated',date('now'))",
+            "INSERT INTO grants VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'curated',date('now'))",
             (
                 get(rec, "ID"), get(rec, "Title"), get(rec, "Funding Body"),
                 get(rec, "Source"), get(rec, "Country / Region"), get(rec, "Category"),
@@ -287,6 +288,7 @@ def main():
                                   get(rec, "Startup Stage")),
                 get(rec, "Startup Stage"), get(rec, "Company Status"),
                 get(rec, "Funding Type"),
+                get(rec, "Entry Type") or "grant",
             ),
         )
 
