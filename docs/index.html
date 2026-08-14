@@ -39,7 +39,8 @@
   .modes { display: flex; justify-content: center; gap: 0; padding: 44px 0 0; }
   .modes button { border: 1px solid var(--hairline); background: none; padding: 13px 30px; font-family: var(--serif); font-size: 17px; letter-spacing: .06em; cursor: pointer; color: var(--ink-soft); }
   .modes button:first-child { border-radius: 999px 0 0 999px; }
-  .modes button:last-child { border-radius: 0 999px 999px 0; border-left: none; }
+  .modes button:not(:first-child) { border-left: none; }
+  .modes button:last-child { border-radius: 0 999px 999px 0; }
   .modes button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
 
   .controls { padding: 28px 0 8px; display: grid; gap: 14px; }
@@ -65,6 +66,11 @@
   .aud-research { color: var(--teal-ink); border-color: var(--teal); background: rgba(168,222,220,.15); }
   .aud-startups { color: var(--pink-ink); border-color: var(--pink); background: rgba(244,153,164,.12); }
   .aud-bridge { color: var(--gold-ink); border-color: var(--line); background: rgba(251,217,154,.18); }
+  .aud-award { color: #6b4d8a; border-color: #c9b3e0; background: rgba(180,150,215,.14); }
+  .aud-nom { color: var(--ink-soft); border-color: var(--hairline); background: transparent; }
+  .prizebox { text-align: right; }
+  .prizeamt { display: block; font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--ink); }
+  .prizefreq { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
   .desc { grid-column: 1; margin-top: 14px; max-width: 66ch; }
   .facts { grid-column: 1; display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
   .facts b { color: var(--ink); font-weight: 500; }
@@ -129,8 +135,8 @@
   <div class="stats">
     <div class="wrap">
       <div class="stat"><div class="n" id="statTotal">–</div><div class="l" id="statTotalLabel">Grants tracked</div></div>
-      <div class="stat"><div class="n" id="statOpen">–</div><div class="l">Open now</div></div>
-      <div class="stat"><div class="n" id="statClosing">–</div><div class="l">Closing soon</div></div>
+      <div class="stat"><div class="n" id="statOpen">–</div><div class="l" id="statOpenLabel">Open now</div></div>
+      <div class="stat"><div class="n" id="statClosing">–</div><div class="l" id="statClosingLabel">Closing soon</div></div>
     </div>
   </div>
 
@@ -246,6 +252,7 @@ function audClass(a){
 }
 
 function card(g){
+  if (g.entry_type === "award") return awardCard(g);
   const startupBits = mode === "startup" ? `
     <div class="sfacts">
       ${g.startup_stage ? g.startup_stage.split(";").map(s=>`<span><b>${esc(s)}</b> stage</span>`).join("") : ""}
@@ -297,9 +304,11 @@ function card(g){
 }
 
 function pool(){
+  if (mode === "award") return ALL.filter(g => g.entry_type === "award");
+  const grants = ALL.filter(g => g.entry_type !== "award");
   return mode === "startup"
-    ? ALL.filter(g => (g.audience||"").startsWith("For startups"))
-    : ALL.filter(g => g.audience === "For research");
+    ? grants.filter(g => (g.audience||"").startsWith("For startups"))
+    : grants.filter(g => g.audience === "For research");
 }
 
 function render(){
@@ -338,8 +347,17 @@ function render(){
 
   const p = pool();
   $("statTotal").textContent = p.length;
-  $("statOpen").textContent = p.filter(g=>g.status==="open"||g.status==="closing_soon").length;
-  $("statClosing").textContent = p.filter(g=>g.status==="closing_soon").length;
+  if (mode === "award"){
+    $("statOpen").textContent = p.filter(g=>/annual/i.test(g.duration||"")).length;
+    $("statOpenLabel").textContent = "Awarded yearly";
+    $("statClosing").textContent = p.filter(g=>/nomination only|cannot self/i.test(g.application_mode||"")).length;
+    $("statClosingLabel").textContent = "Nomination only";
+  } else {
+    $("statOpen").textContent = p.filter(g=>g.status==="open"||g.status==="closing_soon").length;
+    $("statOpenLabel").textContent = "Open now";
+    $("statClosing").textContent = p.filter(g=>g.status==="closing_soon").length;
+    $("statClosingLabel").textContent = "Closing soon";
+  }
 }
 
 function fillSelect(id, values, keepLabel){
@@ -372,16 +390,26 @@ function rebuildFilters(){
 }
 
 function applyMode(){
-  const research = mode === "research";
-  $("heroTitle").innerHTML = research ? "Funding for<br>brilliant minds" : "Funding for<br>science ventures";
-  $("heroText").textContent = research
-    ? "Fellowships and grants for PhD students and postdocs — deadlines, amounts and eligibility, checked against the official sources."
-    : "Grants, incubators and seed funding for founders — filter by country, stage and whether your company exists yet.";
-  $("q").placeholder = research
-    ? "Search grants — postdoc, ERC, life sciences, Austria…"
-    : "Search startup funding — deep tech, pre-seed, aws, EIC…";
-  $("statTotalLabel").textContent = research ? "Grants tracked" : "Programmes tracked";
-  $("heroImg").src = research ? "img-library.jpg" : "img-lab.jpg";
+  const titles = {
+    research: "Funding for<br>brilliant minds",
+    startup:  "Funding for<br>science ventures",
+    award:    "Prizes for<br>brilliant work",
+  };
+  const texts = {
+    research: "Fellowships and grants for PhD students and postdocs — deadlines, amounts and eligibility, checked against the official sources.",
+    startup:  "Grants, incubators and seed funding for founders — filter by country, stage and whether your company exists yet.",
+    award:    "Major science and startup prizes — what they reward, who is eligible, and how to enter or be nominated.",
+  };
+  const placeholders = {
+    research: "Search grants — postdoc, ERC, life sciences, Austria…",
+    startup:  "Search startup funding — deep tech, pre-seed, aws, EIC…",
+    award:    "Search awards — Nobel, Breakthrough, young investigator…",
+  };
+  $("heroTitle").innerHTML = titles[mode];
+  $("heroText").textContent = texts[mode];
+  $("q").placeholder = placeholders[mode];
+  $("statTotalLabel").textContent = mode === "award" ? "Awards tracked" : (mode === "startup" ? "Programmes tracked" : "Grants tracked");
+  $("heroImg").src = mode === "startup" ? "img-lab.jpg" : "img-library.jpg";
   rebuildFilters();
   render();
 }
